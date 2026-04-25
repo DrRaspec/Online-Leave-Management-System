@@ -1,0 +1,146 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.Master.cs" Inherits="OnlineLeaveManagementSystem.SiteMaster" %>
+<!DOCTYPE html>
+<html lang="en">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%: Page.Title %> &mdash; LeaveHub</title>
+    <link rel="icon" type="image/png" href="<%= ResolveUrl("~/Images/DR_tab_logo.png") %>" />
+    <link rel="stylesheet" href="<%= ResolveUrl("~/Content/site.css?v=20260413") %>" />
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="app-layout">
+
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-brand">
+                    <asp:Image runat="server" ImageUrl="~/Images/logo.png" CssClass="sidebar-brand-logo" AlternateText="LeaveHub" />
+                    <div>
+                        <div class="sidebar-brand-text">LeaveHub</div>
+                        <div class="sidebar-brand-sub">Management System</div>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <div class="sidebar-section-label">Menu</div>
+
+                    <a class="<%= GetNavCss("Dashboard.aspx") %>" href="<%= ResolveUrl("~/Dashboard.aspx") %>">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25a2.25 2.25 0 0 1-2.25-2.25v-2.25Z" />
+                        </svg>
+                        Dashboard
+                    </a>
+
+                    <asp:HyperLink ID="lnkApplyLeave" runat="server" NavigateUrl="~/ApplyLeave.aspx" CssClass="nav-item">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Apply Leave
+                    </asp:HyperLink>
+
+                    <a class="<%= GetNavCss("MyLeaves.aspx") %>" href="<%= ResolveUrl("~/MyLeaves.aspx") %>">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        My Leaves
+                    </a>
+
+                    <asp:HyperLink ID="lnkNotifications" runat="server" NavigateUrl="~/Notifications.aspx" CssClass="nav-item">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 1-5.714 0A8.967 8.967 0 0 1 6 16.139V11.25a6 6 0 1 1 12 0v4.889a8.967 8.967 0 0 1-3.143.943ZM9.75 17.25h4.5a2.25 2.25 0 0 1-4.5 0Z" />
+                        </svg>
+                        Notifications
+                        <asp:Label ID="lblNotificationCount" runat="server" CssClass="nav-count" Visible="false" />
+                    </asp:HyperLink>
+
+                    <asp:HyperLink ID="lnkManageRequests" runat="server" NavigateUrl="~/ManageRequests.aspx" CssClass="nav-item">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        </svg>
+                        Manage Requests
+                    </asp:HyperLink>
+
+                    <asp:HyperLink ID="lnkLeaveReports" runat="server" NavigateUrl="~/LeaveReports.aspx" CssClass="nav-item">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v18m0-6h16.5m-16.5-6h10.5m-10.5-6h16.5" />
+                        </svg>
+                        Leave Reports
+                    </asp:HyperLink>
+
+                    <asp:HyperLink ID="lnkManageUsers" runat="server" NavigateUrl="~/ManageUsers.aspx" CssClass="nav-item">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.742-.479 3 3 0 0 0-4.682-2.72m.94 3.198-.001.031c0 .225-.018.447-.053.664M18 18.72a8.966 8.966 0 0 1-5.054-1.189M18 18.72a8.966 8.966 0 0 0-5.054-1.189m0 0a8.966 8.966 0 0 0-5.054 1.189m5.054-1.189V14.25m0 3.281c-.225 0-.447.018-.664.053m.664-.053a8.966 8.966 0 0 0-5.054 1.189M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0ZM7.5 9.75a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                        </svg>
+                        Manage Users
+                    </asp:HyperLink>
+
+                    <asp:HyperLink ID="lnkCompanySettings" runat="server" NavigateUrl="~/CompanySettings.aspx" CssClass="nav-item">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 1 1 15 0 7.5 7.5 0 0 1-15 0Zm7.5-4.5v4.5l3 3" />
+                        </svg>
+                        Company Settings
+                    </asp:HyperLink>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="sidebar-user">
+                        <div class="sidebar-avatar">
+                            <asp:Label ID="lblAvatarInitial" runat="server" />
+                        </div>
+                        <div>
+                            <div class="sidebar-user-name"><asp:Label ID="lblCurrentUser" runat="server" /></div>
+                            <div class="sidebar-user-role"><asp:Label ID="lblCurrentRole" runat="server" /></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Overlay for mobile sidebar -->
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+            <!-- Main content area -->
+            <div class="main-area">
+                <!-- Top bar -->
+                <header class="topbar">
+                    <div class="topbar-left">
+                        <button type="button" class="sidebar-toggle" data-sidebar-toggle="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                            </svg>
+                        </button>
+                        <div>
+                            <div class="topbar-breadcrumb">LeaveHub <span>/</span> <%: string.IsNullOrWhiteSpace(Page.Title) ? "Dashboard" : Page.Title %></div>
+                        </div>
+                    </div>
+                    <div class="topbar-right">
+                        <div class="topbar-user-info">
+                            <asp:Label ID="lblPageSubtitle" runat="server" CssClass="topbar-user-sub" />
+                        </div>
+                        <asp:HyperLink ID="lnkChangePassword" runat="server" NavigateUrl="~/ChangePassword.aspx" CssClass="btn-logout">Change Password</asp:HyperLink>
+                        <asp:LinkButton ID="btnLogout" runat="server" Text="Logout" CssClass="btn-logout" OnClick="btnLogout_Click" CausesValidation="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                            </svg>
+                            Logout
+                        </asp:LinkButton>
+                    </div>
+                </header>
+
+                <div class="content-wrap">
+                    <asp:ContentPlaceHolder ID="MainContent" runat="server" />
+
+                    <footer class="app-footer">
+                        &copy; NUM 2025&ndash;26 &middot; LeaveHub
+                    </footer>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+    <script src="<%= ResolveUrl("~/Scripts/site.js?v=20260425") %>"></script>
+    <asp:ContentPlaceHolder ID="ScriptsContent" runat="server" />
+</body>
+</html>
