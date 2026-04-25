@@ -26,6 +26,12 @@
             </div>
             <div class="card-body">
                 <asp:Label ID="lblRequestsMessage" runat="server" CssClass="empty-state" Visible="false" />
+                <div id="manageRequestsLoading" class="page-loading-overlay" aria-hidden="true">
+                    <div class="page-loading-card">
+                        <span class="page-loading-spinner" aria-hidden="true"></span>
+                        <span>Loading requests...</span>
+                    </div>
+                </div>
 
                 <div class="toolbar-inline">
                     <div class="form-grid" style="width:100%;">
@@ -105,9 +111,49 @@
                         </ItemTemplate>
                     </asp:Repeater>
                 </div>
+
+                <asp:Panel ID="pnlPager" runat="server" CssClass="pager-bar" Visible="false">
+                    <asp:Button ID="btnPreviousPage" runat="server" Text="Previous" CssClass="btn-secondary" OnClick="btnPreviousPage_Click" CausesValidation="false" />
+                    <asp:Label ID="lblPageSummary" runat="server" CssClass="pager-summary" Text="Page 1 of 1" />
+                    <asp:Button ID="btnNextPage" runat="server" Text="Next" CssClass="btn-secondary" OnClick="btnNextPage_Click" CausesValidation="false" />
+                </asp:Panel>
             </div>
         </div>
     </div>
 </asp:Content>
 <asp:Content ID="ScriptsContent" ContentPlaceHolderID="ScriptsContent" runat="server">
+    <script>
+        (function () {
+            function showLoading() {
+                var overlay = document.getElementById("manageRequestsLoading");
+                if (overlay) {
+                    overlay.classList.add("is-visible");
+                }
+                document.body.classList.add("is-page-loading");
+            }
+
+            function bindLoadingTrigger(element, eventName) {
+                if (!element) {
+                    return;
+                }
+
+                element.addEventListener(eventName, function () {
+                    showLoading();
+                });
+            }
+
+            document.addEventListener("DOMContentLoaded", function () {
+                bindLoadingTrigger(document.getElementById("<%= btnApplyFilters.ClientID %>"), "click");
+                bindLoadingTrigger(document.getElementById("<%= ddlStatusFilter.ClientID %>"), "change");
+                bindLoadingTrigger(document.getElementById("<%= ddlDepartmentFilter.ClientID %>"), "change");
+                bindLoadingTrigger(document.getElementById("<%= btnPreviousPage.ClientID %>"), "click");
+                bindLoadingTrigger(document.getElementById("<%= btnNextPage.ClientID %>"), "click");
+
+                var actionButtons = document.querySelectorAll(".btn-approve, .btn-reject");
+                for (var i = 0; i < actionButtons.length; i++) {
+                    bindLoadingTrigger(actionButtons[i], "click");
+                }
+            });
+        })();
+    </script>
 </asp:Content>

@@ -8,9 +8,17 @@ namespace OnlineLeaveManagementSystem
 {
     public partial class ManageRequests : AuthenticatedPage
     {
+        private const int PageSize = 10;
+
         protected override string[] AllowedRoles
         {
             get { return new[] { AuthorizationHelper.AdminRole, AuthorizationHelper.HrRole, AuthorizationHelper.DepartmentAdminRole }; }
+        }
+
+        private int CurrentPage
+        {
+            get { return ViewState["ManageRequestsCurrentPage"] == null ? 1 : Convert.ToInt32(ViewState["ManageRequestsCurrentPage"]); }
+            set { ViewState["ManageRequestsCurrentPage"] = value < 1 ? 1 : value; }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -24,16 +32,35 @@ namespace OnlineLeaveManagementSystem
 
         protected void btnApplyFilters_Click(object sender, EventArgs e)
         {
+            CurrentPage = 1;
             BindRequests();
         }
 
         protected void ddlStatusFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
+            CurrentPage = 1;
             BindRequests();
         }
 
         protected void ddlDepartmentFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
+            CurrentPage = 1;
+            BindRequests();
+        }
+
+        protected void btnPreviousPage_Click(object sender, EventArgs e)
+        {
+            if (CurrentPage > 1)
+            {
+                CurrentPage--;
+            }
+
+            BindRequests();
+        }
+
+        protected void btnNextPage_Click(object sender, EventArgs e)
+        {
+            CurrentPage++;
             BindRequests();
         }
 
@@ -89,16 +116,38 @@ namespace OnlineLeaveManagementSystem
         {
             try
             {
-                DataTable requestsTable = LeaveManagementRepository.GetManageableRequests(
+                LeaveManagementRepository.PagedDataTableResult pagedResult = LeaveManagementRepository.GetManageableRequestsPage(
                     CurrentUser,
                     ddlStatusFilter.SelectedValue,
                     ddlDepartmentFilter.SelectedValue,
-                    txtSearch.Text);
+                    txtSearch.Text,
+                    CurrentPage,
+                    PageSize);
+                int totalPages = GetTotalPages(pagedResult.TotalCount, PageSize);
+                if (CurrentPage > totalPages)
+                {
+                    CurrentPage = totalPages;
+                    pagedResult = LeaveManagementRepository.GetManageableRequestsPage(
+                        CurrentUser,
+                        ddlStatusFilter.SelectedValue,
+                        ddlDepartmentFilter.SelectedValue,
+                        txtSearch.Text,
+                        CurrentPage,
+                        PageSize);
+                }
+
+                DataTable requestsTable = pagedResult.Data;
 
                 rptRequests.DataSource = requestsTable;
                 rptRequests.DataBind();
 
-                lblRequestCount.Text = requestsTable.Rows.Count + " requests";
+                lblRequestCount.Text = pagedResult.TotalCount + " requests";
+                lblPageSummary.Text = pagedResult.TotalCount == 0
+                    ? "No requests"
+                    : string.Format("Page {0} of {1}", CurrentPage, totalPages);
+                btnPreviousPage.Enabled = CurrentPage > 1;
+                btnNextPage.Enabled = CurrentPage < totalPages;
+                pnlPager.Visible = pagedResult.TotalCount > PageSize;
                 lblRequestsMessage.Visible = requestsTable.Rows.Count == 0;
                 lblRequestsMessage.CssClass = "empty-state";
                 lblRequestsMessage.Text = requestsTable.Rows.Count == 0 ? "No leave requests found for the selected filters." : string.Empty;
@@ -108,6 +157,10 @@ namespace OnlineLeaveManagementSystem
                 rptRequests.DataSource = null;
                 rptRequests.DataBind();
                 lblRequestCount.Text = "0 requests";
+                lblPageSummary.Text = "Page 1 of 1";
+                btnPreviousPage.Enabled = false;
+                btnNextPage.Enabled = false;
+                pnlPager.Visible = false;
                 lblRequestsMessage.Text = ex.Message;
                 lblRequestsMessage.CssClass = "error-label";
                 lblRequestsMessage.Visible = true;
@@ -181,6 +234,11 @@ namespace OnlineLeaveManagementSystem
             }
 
             return string.Format("{0} on {1:dd MMM yyyy HH:mm}", reviewer, Convert.ToDateTime(reviewedAtValue));
+        }
+
+        private static int GetTotalPages(int totalCount, int pageSize)
+        {
+            return Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
         }
     }
 }

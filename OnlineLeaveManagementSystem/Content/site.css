@@ -943,6 +943,71 @@ input[type="button"]:hover {
 
 .empty-state:empty { display: none; }
 
+.page-loading-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(248, 250, 252, 0.72);
+    backdrop-filter: blur(3px);
+    z-index: 120;
+}
+
+.page-loading-overlay.is-visible {
+    display: flex;
+}
+
+.page-loading-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    background: var(--white);
+    box-shadow: var(--shadow-lg);
+    color: var(--gray-700);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.page-loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--gray-200);
+    border-top-color: var(--blue-500);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+
+body.is-page-loading {
+    cursor: progress;
+}
+
+.pager-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--gray-100);
+}
+
+.pager-summary {
+    color: var(--gray-500);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* --- Leave Cards -------------------------------------------------- */
 .leave-card,
 .request-card {

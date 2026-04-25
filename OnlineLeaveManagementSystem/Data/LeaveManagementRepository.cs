@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using OnlineLeaveManagementSystem.Security;
@@ -8,6 +9,20 @@ namespace OnlineLeaveManagementSystem.Data
     public static class LeaveManagementRepository
     {
         private const string UnpaidLeaveName = "Unpaid Leave";
+
+        public sealed class PagedDataTableResult
+        {
+            public DataTable Data { get; set; }
+            public int TotalCount { get; set; }
+        }
+
+        public sealed class LeaveReportSummaryResult
+        {
+            public int TotalRecords { get; set; }
+            public decimal TotalRequestedDays { get; set; }
+            public int PendingCount { get; set; }
+            public int ApprovedCount { get; set; }
+        }
 
         public static DataTable GetDepartments(bool includeInactive)
         {
@@ -154,6 +169,77 @@ WHERE lr.UserId = @UserId";
             }
         }
 
+        public static PagedDataTableResult GetManageableRequestsPage(
+            AuthenticatedUser currentUser,
+            string selectedStatus,
+            string selectedDepartment,
+            string searchText,
+            int pageNumber,
+            int pageSize)
+        {
+            if (pageNumber < 1)
+            {
+                pageNumber = 1;
+            }
+
+            if (pageSize < 1)
+            {
+                pageSize = 10;
+            }
+
+            string fromClause = @"
+FROM dbo.LeaveRequests lr
+INNER JOIN dbo.Users u ON u.Id = lr.UserId
+LEFT JOIN dbo.Users reviewer ON reviewer.Id = lr.ReviewedByUserId
+WHERE 1 = 1";
+            List<SqlParameter> parameters = BuildManageableRequestsParameters(currentUser, selectedStatus, selectedDepartment, searchText, ref fromClause);
+
+            using (SqlConnection connection = DbHelper.GetOpenConnection())
+            using (SqlCommand countCommand = connection.CreateCommand())
+            using (SqlCommand dataCommand = connection.CreateCommand())
+            using (SqlDataAdapter adapter = new SqlDataAdapter(dataCommand))
+            {
+                countCommand.CommandText = "SELECT COUNT(1) " + fromClause + ";";
+                AddParameters(countCommand, parameters);
+
+                int totalCount = Convert.ToInt32(countCommand.ExecuteScalar());
+                int offset = (pageNumber - 1) * pageSize;
+
+                dataCommand.CommandText = @"
+SELECT
+    lr.Id,
+    u.Id AS RequesterUserId,
+    u.Username,
+    u.FullName,
+    u.Department,
+    lr.LeaveType,
+    lr.StartDate,
+    lr.EndDate,
+    lr.Status,
+    lr.Reason,
+    lr.ReviewComment,
+    lr.CreatedAt,
+    reviewer.FullName AS ReviewedByName,
+    lr.ReviewedAt,
+    ISNULL(lr.RequestedDays, DATEDIFF(DAY, lr.StartDate, lr.EndDate) + 1) AS RequestedDays
+" + fromClause + @"
+ORDER BY CASE WHEN lr.Status = N'Pending' THEN 0 ELSE 1 END, lr.CreatedAt DESC, lr.StartDate DESC
+OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+                AddParameters(dataCommand, parameters);
+                dataCommand.Parameters.AddWithValue("@Offset", offset);
+                dataCommand.Parameters.AddWithValue("@PageSize", pageSize);
+
+                DataTable data = new DataTable();
+                adapter.Fill(data);
+
+                return new PagedDataTableResult
+                {
+                    Data = data,
+                    TotalCount = totalCount
+                };
+            }
+        }
+
         public static DataTable GetManageableRequests(AuthenticatedUser currentUser, string selectedStatus, string selectedDepartment, string searchText)
         {
             using (SqlConnection connection = DbHelper.GetOpenConnection())
@@ -211,6 +297,125 @@ WHERE 1 = 1";
                 DataTable data = new DataTable();
                 adapter.Fill(data);
                 return data;
+            }
+        }
+
+        public static PagedDataTableResult GetLeaveReportPage(
+            AuthenticatedUser currentUser,
+            string selectedStatus,
+            string selectedDepartment,
+            string selectedLeaveType,
+            DateTime? startDate,
+            DateTime? endDate,
+            string searchText,
+            int pageNumber,
+            int pageSize)
+        {
+            if (pageNumber < 1)
+            {
+                pageNumber = 1;
+            }
+
+            if (pageSize < 1)
+            {
+                pageSize = 20;
+            }
+
+            string fromClause = @"
+FROM dbo.LeaveRequests lr
+INNER JOIN dbo.Users u ON u.Id = lr.UserId
+LEFT JOIN dbo.Users reviewer ON reviewer.Id = lr.ReviewedByUserId
+WHERE 1 = 1";
+            List<SqlParameter> parameters = BuildLeaveReportParameters(currentUser, selectedStatus, selectedDepartment, selectedLeaveType, startDate, endDate, searchText, ref fromClause);
+
+            using (SqlConnection connection = DbHelper.GetOpenConnection())
+            using (SqlCommand countCommand = connection.CreateCommand())
+            using (SqlCommand dataCommand = connection.CreateCommand())
+            using (SqlDataAdapter adapter = new SqlDataAdapter(dataCommand))
+            {
+                countCommand.CommandText = "SELECT COUNT(1) " + fromClause + ";";
+                AddParameters(countCommand, parameters);
+
+                int totalCount = Convert.ToInt32(countCommand.ExecuteScalar());
+                int offset = (pageNumber - 1) * pageSize;
+
+                dataCommand.CommandText = @"
+SELECT
+    lr.Id,
+    u.Username,
+    u.FullName,
+    u.Department,
+    lr.LeaveType,
+    lr.StartDate,
+    lr.EndDate,
+    lr.Status,
+    lr.Reason,
+    lr.CreatedAt,
+    reviewer.FullName AS ReviewedByName,
+    lr.ReviewedAt,
+    lr.ReviewComment,
+    ISNULL(lr.RequestedDays, DATEDIFF(DAY, lr.StartDate, lr.EndDate) + 1) AS RequestedDays
+" + fromClause + @"
+ORDER BY lr.StartDate DESC, lr.CreatedAt DESC, u.FullName ASC
+OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+                AddParameters(dataCommand, parameters);
+                dataCommand.Parameters.AddWithValue("@Offset", offset);
+                dataCommand.Parameters.AddWithValue("@PageSize", pageSize);
+
+                DataTable data = new DataTable();
+                adapter.Fill(data);
+
+                return new PagedDataTableResult
+                {
+                    Data = data,
+                    TotalCount = totalCount
+                };
+            }
+        }
+
+        public static LeaveReportSummaryResult GetLeaveReportSummary(
+            AuthenticatedUser currentUser,
+            string selectedStatus,
+            string selectedDepartment,
+            string selectedLeaveType,
+            DateTime? startDate,
+            DateTime? endDate,
+            string searchText)
+        {
+            string fromClause = @"
+FROM dbo.LeaveRequests lr
+INNER JOIN dbo.Users u ON u.Id = lr.UserId
+LEFT JOIN dbo.Users reviewer ON reviewer.Id = lr.ReviewedByUserId
+WHERE 1 = 1";
+            List<SqlParameter> parameters = BuildLeaveReportParameters(currentUser, selectedStatus, selectedDepartment, selectedLeaveType, startDate, endDate, searchText, ref fromClause);
+
+            using (SqlConnection connection = DbHelper.GetOpenConnection())
+            using (SqlCommand command = connection.CreateCommand())
+            {
+                command.CommandText = @"
+SELECT
+    COUNT(1) AS TotalRecords,
+    ISNULL(SUM(ISNULL(lr.RequestedDays, DATEDIFF(DAY, lr.StartDate, lr.EndDate) + 1)), 0) AS TotalRequestedDays,
+    SUM(CASE WHEN lr.Status = N'Pending' THEN 1 ELSE 0 END) AS PendingCount,
+    SUM(CASE WHEN lr.Status = N'Approved' THEN 1 ELSE 0 END) AS ApprovedCount
+" + fromClause + ";";
+                AddParameters(command, parameters);
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    if (!reader.Read())
+                    {
+                        return new LeaveReportSummaryResult();
+                    }
+
+                    return new LeaveReportSummaryResult
+                    {
+                        TotalRecords = reader["TotalRecords"] == DBNull.Value ? 0 : Convert.ToInt32(reader["TotalRecords"]),
+                        TotalRequestedDays = reader["TotalRequestedDays"] == DBNull.Value ? 0 : Convert.ToDecimal(reader["TotalRequestedDays"]),
+                        PendingCount = reader["PendingCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["PendingCount"]),
+                        ApprovedCount = reader["ApprovedCount"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ApprovedCount"])
+                    };
+                }
             }
         }
 
@@ -723,6 +928,111 @@ VALUES
         private static bool IsUnpaidLeave(string leaveTypeName)
         {
             return string.Equals(leaveTypeName, UnpaidLeaveName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static List<SqlParameter> BuildManageableRequestsParameters(
+            AuthenticatedUser currentUser,
+            string selectedStatus,
+            string selectedDepartment,
+            string searchText,
+            ref string fromClause)
+        {
+            List<SqlParameter> parameters = new List<SqlParameter>();
+
+            if (AuthorizationHelper.IsDepartmentAdmin(currentUser))
+            {
+                fromClause += " AND u.Department = @CurrentDepartment";
+                parameters.Add(new SqlParameter("@CurrentDepartment", currentUser.Department));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedStatus) && !string.Equals(selectedStatus, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                fromClause += " AND lr.Status = @Status";
+                parameters.Add(new SqlParameter("@Status", selectedStatus));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDepartment) &&
+                !string.Equals(selectedDepartment, "All", StringComparison.OrdinalIgnoreCase) &&
+                AuthorizationHelper.CanSelectAnyDepartment(currentUser))
+            {
+                fromClause += " AND u.Department = @Department";
+                parameters.Add(new SqlParameter("@Department", selectedDepartment.Trim()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                fromClause += " AND (u.FullName LIKE @Search OR u.Username LIKE @Search OR lr.LeaveType LIKE @Search)";
+                parameters.Add(new SqlParameter("@Search", "%" + searchText.Trim() + "%"));
+            }
+
+            return parameters;
+        }
+
+        private static List<SqlParameter> BuildLeaveReportParameters(
+            AuthenticatedUser currentUser,
+            string selectedStatus,
+            string selectedDepartment,
+            string selectedLeaveType,
+            DateTime? startDate,
+            DateTime? endDate,
+            string searchText,
+            ref string fromClause)
+        {
+            List<SqlParameter> parameters = new List<SqlParameter>();
+
+            if (AuthorizationHelper.IsDepartmentAdmin(currentUser))
+            {
+                fromClause += " AND u.Department = @CurrentDepartment";
+                parameters.Add(new SqlParameter("@CurrentDepartment", currentUser.Department));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedStatus) && !string.Equals(selectedStatus, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                fromClause += " AND lr.Status = @Status";
+                parameters.Add(new SqlParameter("@Status", selectedStatus));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedDepartment) &&
+                !string.Equals(selectedDepartment, "All", StringComparison.OrdinalIgnoreCase) &&
+                AuthorizationHelper.CanSelectAnyDepartment(currentUser))
+            {
+                fromClause += " AND u.Department = @Department";
+                parameters.Add(new SqlParameter("@Department", selectedDepartment.Trim()));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedLeaveType) && !string.Equals(selectedLeaveType, "All", StringComparison.OrdinalIgnoreCase))
+            {
+                fromClause += " AND lr.LeaveType = @LeaveType";
+                parameters.Add(new SqlParameter("@LeaveType", selectedLeaveType.Trim()));
+            }
+
+            if (startDate.HasValue)
+            {
+                fromClause += " AND lr.StartDate >= @StartDate";
+                parameters.Add(new SqlParameter("@StartDate", startDate.Value.Date));
+            }
+
+            if (endDate.HasValue)
+            {
+                fromClause += " AND lr.EndDate <= @EndDate";
+                parameters.Add(new SqlParameter("@EndDate", endDate.Value.Date));
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                fromClause += " AND (u.FullName LIKE @Search OR u.Username LIKE @Search OR lr.LeaveType LIKE @Search OR ISNULL(lr.Reason, N'') LIKE @Search)";
+                parameters.Add(new SqlParameter("@Search", "%" + searchText.Trim() + "%"));
+            }
+
+            return parameters;
+        }
+
+        private static void AddParameters(SqlCommand command, IEnumerable<SqlParameter> parameters)
+        {
+            foreach (SqlParameter parameter in parameters)
+            {
+                command.Parameters.AddWithValue(parameter.ParameterName, parameter.Value);
+            }
         }
 
         private sealed class LeaveTypeRecord

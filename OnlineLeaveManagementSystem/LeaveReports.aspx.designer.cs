@@ -46,5 +46,13 @@ namespace OnlineLeaveManagementSystem
         protected global::System.Web.UI.WebControls.Repeater rptReportRows;
 
         protected global::System.Web.UI.WebControls.Label lblEmptyReport;
+
+        protected global::System.Web.UI.WebControls.Panel pnlPager;
+
+        protected global::System.Web.UI.WebControls.Button btnPreviousPage;
+
+        protected global::System.Web.UI.WebControls.Label lblPageSummary;
+
+        protected global::System.Web.UI.WebControls.Button btnNextPage;
     }
 }

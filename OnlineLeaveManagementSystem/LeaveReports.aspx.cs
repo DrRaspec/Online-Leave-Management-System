@@ -10,9 +10,17 @@ namespace OnlineLeaveManagementSystem
 {
     public partial class LeaveReports : AuthenticatedPage
     {
+        private const int PageSize = 20;
+
         protected override string[] AllowedRoles
         {
             get { return new[] { AuthorizationHelper.AdminRole, AuthorizationHelper.HrRole, AuthorizationHelper.DepartmentAdminRole }; }
+        }
+
+        private int CurrentPage
+        {
+            get { return ViewState["LeaveReportsCurrentPage"] == null ? 1 : Convert.ToInt32(ViewState["LeaveReportsCurrentPage"]); }
+            set { ViewState["LeaveReportsCurrentPage"] = value < 1 ? 1 : value; }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -27,6 +35,23 @@ namespace OnlineLeaveManagementSystem
 
         protected void btnApplyFilters_Click(object sender, EventArgs e)
         {
+            CurrentPage = 1;
+            BindReport();
+        }
+
+        protected void btnPreviousPage_Click(object sender, EventArgs e)
+        {
+            if (CurrentPage > 1)
+            {
+                CurrentPage--;
+            }
+
+            BindReport();
+        }
+
+        protected void btnNextPage_Click(object sender, EventArgs e)
+        {
+            CurrentPage++;
             BindReport();
         }
 
@@ -130,15 +155,48 @@ namespace OnlineLeaveManagementSystem
         {
             try
             {
-                DataTable reportTable = GetReportData();
+                LeaveManagementRepository.PagedDataTableResult pagedResult = LeaveManagementRepository.GetLeaveReportPage(
+                    CurrentUser,
+                    ddlStatusFilter.SelectedValue,
+                    ddlDepartmentFilter.SelectedValue,
+                    ddlLeaveTypeFilter.SelectedValue,
+                    ParseDate(txtStartDate.Text),
+                    ParseDate(txtEndDate.Text),
+                    txtSearch.Text,
+                    CurrentPage,
+                    PageSize);
+                int totalPages = GetTotalPages(pagedResult.TotalCount, PageSize);
+                if (CurrentPage > totalPages)
+                {
+                    CurrentPage = totalPages;
+                    pagedResult = LeaveManagementRepository.GetLeaveReportPage(
+                        CurrentUser,
+                        ddlStatusFilter.SelectedValue,
+                        ddlDepartmentFilter.SelectedValue,
+                        ddlLeaveTypeFilter.SelectedValue,
+                        ParseDate(txtStartDate.Text),
+                        ParseDate(txtEndDate.Text),
+                        txtSearch.Text,
+                        CurrentPage,
+                        PageSize);
+                }
+
+                LeaveManagementRepository.LeaveReportSummaryResult summary = GetReportSummary();
+                DataTable reportTable = pagedResult.Data;
                 rptReportRows.DataSource = reportTable;
                 rptReportRows.DataBind();
 
-                lblResultCount.Text = reportTable.Rows.Count + " records";
-                lblTotalRecords.Text = reportTable.Rows.Count.ToString();
-                lblRequestedDays.Text = GetTotalDays(reportTable).ToString("0.#");
-                lblPendingCount.Text = CountByStatus(reportTable, "Pending").ToString();
-                lblApprovedCount.Text = CountByStatus(reportTable, "Approved").ToString();
+                lblResultCount.Text = summary.TotalRecords + " records";
+                lblTotalRecords.Text = summary.TotalRecords.ToString();
+                lblRequestedDays.Text = summary.TotalRequestedDays.ToString("0.#");
+                lblPendingCount.Text = summary.PendingCount.ToString();
+                lblApprovedCount.Text = summary.ApprovedCount.ToString();
+                lblPageSummary.Text = summary.TotalRecords == 0
+                    ? "No records"
+                    : string.Format("Page {0} of {1}", CurrentPage, totalPages);
+                btnPreviousPage.Enabled = CurrentPage > 1;
+                btnNextPage.Enabled = CurrentPage < totalPages;
+                pnlPager.Visible = summary.TotalRecords > PageSize;
                 lblEmptyReport.Visible = reportTable.Rows.Count == 0;
                 lblReportMessage.Visible = false;
             }
@@ -151,6 +209,10 @@ namespace OnlineLeaveManagementSystem
                 lblRequestedDays.Text = "0";
                 lblPendingCount.Text = "0";
                 lblApprovedCount.Text = "0";
+                lblPageSummary.Text = "Page 1 of 1";
+                btnPreviousPage.Enabled = false;
+                btnNextPage.Enabled = false;
+                pnlPager.Visible = false;
                 lblEmptyReport.Visible = false;
                 lblReportMessage.Text = ex.Message;
                 lblReportMessage.CssClass = "error-label";
@@ -208,6 +270,18 @@ namespace OnlineLeaveManagementSystem
                 txtSearch.Text);
         }
 
+        private LeaveManagementRepository.LeaveReportSummaryResult GetReportSummary()
+        {
+            return LeaveManagementRepository.GetLeaveReportSummary(
+                CurrentUser,
+                ddlStatusFilter.SelectedValue,
+                ddlDepartmentFilter.SelectedValue,
+                ddlLeaveTypeFilter.SelectedValue,
+                ParseDate(txtStartDate.Text),
+                ParseDate(txtEndDate.Text),
+                txtSearch.Text);
+        }
+
         private List<string> BuildFilterSummary()
         {
             return new List<string>
@@ -227,29 +301,9 @@ namespace OnlineLeaveManagementSystem
             return DateTime.TryParse(value, out parsed) ? parsed.Date : (DateTime?)null;
         }
 
-        private static decimal GetTotalDays(DataTable table)
+        private static int GetTotalPages(int totalCount, int pageSize)
         {
-            decimal total = 0;
-            foreach (DataRow row in table.Rows)
-            {
-                total += row["RequestedDays"] == DBNull.Value ? 0 : Convert.ToDecimal(row["RequestedDays"]);
-            }
-
-            return total;
-        }
-
-        private static int CountByStatus(DataTable table, string status)
-        {
-            int count = 0;
-            foreach (DataRow row in table.Rows)
-            {
-                if (string.Equals(Convert.ToString(row["Status"]), status, StringComparison.OrdinalIgnoreCase))
-                {
-                    count++;
-                }
-            }
-
-            return count;
+            return Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
         }
     }
 }
