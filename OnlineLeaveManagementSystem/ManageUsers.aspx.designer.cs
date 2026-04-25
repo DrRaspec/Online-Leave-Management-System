@@ -21,14 +21,6 @@ namespace OnlineLeaveManagementSystem
         protected global::System.Web.UI.WebControls.DropDownList ddlNewRole;
         protected global::System.Web.UI.WebControls.CheckBox chkNewIsActive;
         protected global::System.Web.UI.WebControls.Button btnCreateUser;
-        protected global::System.Web.UI.WebControls.TextBox txtDepartmentName;
-        protected global::System.Web.UI.WebControls.Button btnCreateDepartment;
-        protected global::System.Web.UI.WebControls.TextBox txtLeaveTypeName;
-        protected global::System.Web.UI.WebControls.TextBox txtLeaveTypeDefaultDays;
-        protected global::System.Web.UI.WebControls.CheckBox chkLeaveTypeRequiresAttachment;
-        protected global::System.Web.UI.WebControls.Button btnCreateLeaveType;
-        protected global::System.Web.UI.WebControls.Repeater rptDepartments;
-        protected global::System.Web.UI.WebControls.Repeater rptLeaveTypes;
         protected global::System.Web.UI.WebControls.Label lblLockedUsers;
         protected global::System.Web.UI.WebControls.TextBox txtUserSearch;
         protected global::System.Web.UI.WebControls.DropDownList ddlDepartmentFilter;

@@ -1,6 +1,5 @@
 using System;
 using System.Data;
-using System.Globalization;
 using System.Web.UI.WebControls;
 using OnlineLeaveManagementSystem.Security;
 using OnlineLeaveManagementSystem.Data;
@@ -71,6 +70,9 @@ namespace OnlineLeaveManagementSystem
             DropDownList ddlRole = e.Item.FindControl("ddlRole") as DropDownList;
             DropDownList ddlDepartment = e.Item.FindControl("ddlDepartment") as DropDownList;
             CheckBox chkIsActive = e.Item.FindControl("chkIsActive") as CheckBox;
+            TextBox txtFullName = e.Item.FindControl("txtFullName") as TextBox;
+            Button btnSaveUser = e.Item.FindControl("btnSaveUser") as Button;
+            bool isBootstrapAccount = string.Equals(Convert.ToString(row["Username"]), AuthorizationHelper.BootstrapAdminUsername, StringComparison.OrdinalIgnoreCase);
 
             if (ddlRole != null)
             {
@@ -82,10 +84,14 @@ namespace OnlineLeaveManagementSystem
                     item.Selected = true;
                 }
 
-                bool isBootstrapAccount = string.Equals(Convert.ToString(row["Username"]), AuthorizationHelper.BootstrapAdminUsername, StringComparison.OrdinalIgnoreCase);
                 bool isAnotherAdmin = string.Equals(Convert.ToString(row["Role"]), AuthorizationHelper.AdminRole, StringComparison.OrdinalIgnoreCase) &&
                                       Convert.ToInt32(row["Id"]) != CurrentUser.Id;
                 ddlRole.Enabled = !isBootstrapAccount && (!isAnotherAdmin || AuthorizationHelper.IsBootstrapAdmin(CurrentUser));
+            }
+
+            if (txtFullName != null)
+            {
+                txtFullName.Enabled = !isBootstrapAccount;
             }
 
             if (ddlDepartment != null)
@@ -97,6 +103,8 @@ namespace OnlineLeaveManagementSystem
                     ddlDepartment.ClearSelection();
                     departmentItem.Selected = true;
                 }
+
+                ddlDepartment.Enabled = !isBootstrapAccount;
             }
 
             if (chkIsActive != null)
@@ -105,6 +113,11 @@ namespace OnlineLeaveManagementSystem
                 bool isAnotherAdmin = string.Equals(Convert.ToString(row["Role"]), AuthorizationHelper.AdminRole, StringComparison.OrdinalIgnoreCase) &&
                                       Convert.ToInt32(row["Id"]) != CurrentUser.Id;
                 chkIsActive.Enabled = !isAnotherAdmin || AuthorizationHelper.IsBootstrapAdmin(CurrentUser);
+            }
+
+            if (btnSaveUser != null)
+            {
+                btnSaveUser.Enabled = !isBootstrapAccount;
             }
         }
 
@@ -168,132 +181,7 @@ namespace OnlineLeaveManagementSystem
             BindUsers();
         }
 
-        protected void btnCreateDepartment_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                LeaveManagementRepository.CreateDepartment(txtDepartmentName.Text);
-                txtDepartmentName.Text = string.Empty;
-                ShowSuccess("Department created.");
-                BindDepartmentList(ddlNewDepartment, false);
-                BindDepartmentList(ddlDepartmentFilter, true);
-                BindPage();
-            }
-            catch (Exception ex)
-            {
-                ShowError(ex.Message);
-            }
-        }
 
-        protected void btnCreateLeaveType_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                decimal defaultDays;
-                if (!decimal.TryParse(txtLeaveTypeDefaultDays.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out defaultDays))
-                {
-                    ShowError("Enter a valid default balance.");
-                    return;
-                }
-
-                LeaveManagementRepository.CreateLeaveType(txtLeaveTypeName.Text, defaultDays, chkLeaveTypeRequiresAttachment.Checked);
-                txtLeaveTypeName.Text = string.Empty;
-                txtLeaveTypeDefaultDays.Text = string.Empty;
-                chkLeaveTypeRequiresAttachment.Checked = false;
-                ShowSuccess("Leave type created.");
-                BindPage();
-            }
-            catch (Exception ex)
-            {
-                ShowError(ex.Message);
-            }
-        }
-
-        protected void rptDepartments_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            if (!string.Equals(e.CommandName, "UpdateDepartment", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            int departmentId;
-            if (!int.TryParse(Convert.ToString(e.CommandArgument), out departmentId))
-            {
-                return;
-            }
-
-            try
-            {
-                TextBox txtDepartmentEditName = e.Item.FindControl("txtDepartmentEditName") as TextBox;
-                CheckBox chkDepartmentIsActive = e.Item.FindControl("chkDepartmentIsActive") as CheckBox;
-
-                LeaveManagementRepository.UpdateDepartment(
-                    departmentId,
-                    txtDepartmentEditName == null ? string.Empty : txtDepartmentEditName.Text,
-                    chkDepartmentIsActive != null && chkDepartmentIsActive.Checked);
-
-                ShowSuccess("Department updated.");
-                BindDepartmentList(ddlNewDepartment, false);
-                BindDepartmentList(ddlDepartmentFilter, true);
-                BindPage();
-            }
-            catch (Exception ex)
-            {
-                ShowError(ex.Message);
-            }
-        }
-
-        protected void rptLeaveTypes_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            if (!string.Equals(e.CommandName, "UpdateLeaveType", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            int leaveTypeId;
-            if (!int.TryParse(Convert.ToString(e.CommandArgument), out leaveTypeId))
-            {
-                return;
-            }
-
-            try
-            {
-                TextBox txtLeaveTypeEditName = e.Item.FindControl("txtLeaveTypeEditName") as TextBox;
-                TextBox txtLeaveTypeEditDefaultDays = e.Item.FindControl("txtLeaveTypeEditDefaultDays") as TextBox;
-                TextBox txtLeaveTypeEditSortOrder = e.Item.FindControl("txtLeaveTypeEditSortOrder") as TextBox;
-                CheckBox chkLeaveTypeEditRequiresAttachment = e.Item.FindControl("chkLeaveTypeEditRequiresAttachment") as CheckBox;
-                CheckBox chkLeaveTypeEditIsActive = e.Item.FindControl("chkLeaveTypeEditIsActive") as CheckBox;
-
-                decimal defaultDays;
-                if (!decimal.TryParse(txtLeaveTypeEditDefaultDays == null ? string.Empty : txtLeaveTypeEditDefaultDays.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out defaultDays))
-                {
-                    ShowError("Enter a valid default balance for the leave type.");
-                    return;
-                }
-
-                int sortOrder;
-                if (!int.TryParse(txtLeaveTypeEditSortOrder == null ? string.Empty : txtLeaveTypeEditSortOrder.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out sortOrder))
-                {
-                    ShowError("Enter a valid sort order for the leave type.");
-                    return;
-                }
-
-                LeaveManagementRepository.UpdateLeaveType(
-                    leaveTypeId,
-                    txtLeaveTypeEditName == null ? string.Empty : txtLeaveTypeEditName.Text,
-                    defaultDays,
-                    chkLeaveTypeEditRequiresAttachment != null && chkLeaveTypeEditRequiresAttachment.Checked,
-                    chkLeaveTypeEditIsActive != null && chkLeaveTypeEditIsActive.Checked,
-                    sortOrder);
-
-                ShowSuccess("Leave type updated.");
-                BindPage();
-            }
-            catch (Exception ex)
-            {
-                ShowError(ex.Message);
-            }
-        }
 
         protected string GetAccountStatusCss(object isActiveValue)
         {
@@ -335,28 +223,11 @@ namespace OnlineLeaveManagementSystem
             return value == null || value == DBNull.Value ? "Never signed in" : Convert.ToDateTime(value).ToString("dd MMM yyyy HH:mm");
         }
 
-        protected string GetDepartmentUsageText(object activeUserCountValue)
-        {
-            int count = activeUserCountValue == DBNull.Value ? 0 : Convert.ToInt32(activeUserCountValue);
-            return count == 0 ? "Not assigned to active users." : string.Format("Used by {0} active user(s).", count);
-        }
 
-        protected string GetLeaveTypeUsageText(object requestCountValue, object balanceCountValue)
-        {
-            int requestCount = requestCountValue == DBNull.Value ? 0 : Convert.ToInt32(requestCountValue);
-            int balanceCount = balanceCountValue == DBNull.Value ? 0 : Convert.ToInt32(balanceCountValue);
-            if (requestCount == 0 && balanceCount == 0)
-            {
-                return "No requests or balances yet.";
-            }
-
-            return string.Format("Used in {0} request(s) and {1} balance row(s).", requestCount, balanceCount);
-        }
 
         private void BindPage()
         {
             BindSummary();
-            BindPolicyData();
             BindUsers();
         }
 
@@ -401,14 +272,6 @@ namespace OnlineLeaveManagementSystem
             lblUsersEmpty.Visible = view.Count == 0;
         }
 
-        private void BindPolicyData()
-        {
-            rptDepartments.DataSource = LeaveManagementRepository.GetDepartments(true);
-            rptDepartments.DataBind();
-
-            rptLeaveTypes.DataSource = LeaveManagementRepository.GetLeaveTypes(true);
-            rptLeaveTypes.DataBind();
-        }
 
         private void BindRoleList(ListControl control)
         {

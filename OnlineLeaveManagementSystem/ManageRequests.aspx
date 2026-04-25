@@ -41,7 +41,7 @@
                         </div>
                         <div class="form-group">
                             <label for="<%= ddlStatusFilter.ClientID %>" class="form-label">Status</label>
-                            <asp:DropDownList ID="ddlStatusFilter" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlStatusFilter_SelectedIndexChanged">
+                            <asp:DropDownList ID="ddlStatusFilter" runat="server" OnSelectedIndexChanged="ddlStatusFilter_SelectedIndexChanged">
                                 <asp:ListItem Text="All Statuses" Value="All" />
                                 <asp:ListItem Text="Pending" Value="Pending" />
                                 <asp:ListItem Text="Approved" Value="Approved" />
@@ -50,7 +50,7 @@
                         </div>
                         <div class="form-group">
                             <label for="<%= ddlDepartmentFilter.ClientID %>" class="form-label">Department</label>
-                            <asp:DropDownList ID="ddlDepartmentFilter" runat="server" AutoPostBack="true" OnSelectedIndexChanged="ddlDepartmentFilter_SelectedIndexChanged" />
+                            <asp:DropDownList ID="ddlDepartmentFilter" runat="server" OnSelectedIndexChanged="ddlDepartmentFilter_SelectedIndexChanged" />
                         </div>
                         <div class="form-group" style="justify-content:flex-end;">
                             <label class="form-label" style="visibility:hidden;">Apply</label>
@@ -142,10 +142,23 @@
                 });
             }
 
+            function bindFilterPostBack(element, eventName, postBackTarget) {
+                if (!element) {
+                    return;
+                }
+
+                element.addEventListener(eventName, function () {
+                    showLoading();
+                    if (typeof __doPostBack === "function") {
+                        __doPostBack(postBackTarget, "");
+                    }
+                });
+            }
+
             document.addEventListener("DOMContentLoaded", function () {
                 bindLoadingTrigger(document.getElementById("<%= btnApplyFilters.ClientID %>"), "click");
-                bindLoadingTrigger(document.getElementById("<%= ddlStatusFilter.ClientID %>"), "change");
-                bindLoadingTrigger(document.getElementById("<%= ddlDepartmentFilter.ClientID %>"), "change");
+                bindFilterPostBack(document.getElementById("<%= ddlStatusFilter.ClientID %>"), "change", "<%= ddlStatusFilter.UniqueID %>");
+                bindFilterPostBack(document.getElementById("<%= ddlDepartmentFilter.ClientID %>"), "change", "<%= ddlDepartmentFilter.UniqueID %>");
                 bindLoadingTrigger(document.getElementById("<%= btnPreviousPage.ClientID %>"), "click");
                 bindLoadingTrigger(document.getElementById("<%= btnNextPage.ClientID %>"), "click");
 

@@ -196,6 +196,13 @@ VALUES
                     throw new InvalidOperationException("The default admin account role cannot be changed.");
                 }
 
+                if (string.Equals(target.Username, AuthorizationHelper.BootstrapAdminUsername, StringComparison.OrdinalIgnoreCase) &&
+                    (!string.Equals(normalizedFullName, target.FullName, StringComparison.OrdinalIgnoreCase) ||
+                     !string.Equals(normalizedDepartment, target.Department, StringComparison.OrdinalIgnoreCase)))
+                {
+                    throw new InvalidOperationException("The bootstrap admin account profile cannot be changed. Create and use named admin accounts for day-to-day administration.");
+                }
+
                 if (changingAnotherAdminRole && !AuthorizationHelper.IsBootstrapAdmin(actor))
                 {
                     throw new InvalidOperationException("Only the bootstrap admin account can change another admin's role. Use password reset for admin recovery instead.");
@@ -376,7 +383,7 @@ WHERE Id = @Id", connection))
         private static UserRecord GetUserRecord(SqlConnection connection, int userId)
         {
             using (SqlCommand command = new SqlCommand(@"
-SELECT TOP 1 Id, Username, [Role], IsActive, PasswordHash, PasswordSalt
+SELECT TOP 1 Id, Username, FullName, Department, [Role], IsActive, PasswordHash, PasswordSalt
 FROM dbo.Users
 WHERE Id = @Id", connection))
             {
@@ -393,6 +400,8 @@ WHERE Id = @Id", connection))
                     {
                         Id = Convert.ToInt32(reader["Id"]),
                         Username = Convert.ToString(reader["Username"]),
+                        FullName = Convert.ToString(reader["FullName"]),
+                        Department = Convert.ToString(reader["Department"]),
                         Role = Convert.ToString(reader["Role"]),
                         IsActive = Convert.ToBoolean(reader["IsActive"]),
                         PasswordHash = Convert.ToString(reader["PasswordHash"]),
@@ -520,6 +529,8 @@ WHERE [Role] = N'Admin'
         {
             public int Id { get; set; }
             public string Username { get; set; }
+            public string FullName { get; set; }
+            public string Department { get; set; }
             public string Role { get; set; }
             public bool IsActive { get; set; }
             public string PasswordHash { get; set; }
