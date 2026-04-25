@@ -86,6 +86,7 @@ On a brand-new system, a bootstrap admin account is created automatically if no 
 
 - Username: `admin`
 - Password: generated automatically and stored temporarily in `App_Data/bootstrap-admin.txt`
+- The bootstrap admin profile and department are fixed to keep the recovery account stable
 
 After the first successful password change, that temporary password file is removed.
 

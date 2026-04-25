@@ -62,3 +62,4 @@ The department mainly controls scope, especially for `DepartmentAdmin`.
 - A department like `IT`, `HR`, `Finance`, or `Operations` does not automatically get special behavior.
 - The important difference is the assigned role, not the department name.
 - The only role that depends strongly on department is `DepartmentAdmin`.
+- The bootstrap `admin` account is a reserved recovery account and should not be repurposed as a normal named employee profile.
