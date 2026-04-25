@@ -131,14 +131,42 @@
                                 <tr>
                                     <th>Departments</th>
                                     <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <asp:Repeater ID="rptDepartments" runat="server">
+                                <asp:Repeater ID="rptDepartments" runat="server" OnItemCommand="rptDepartments_ItemCommand">
                                     <ItemTemplate>
                                         <tr>
-                                            <td><%# Eval("Name") %></td>
-                                            <td><span class="status-badge status-success">Active</span></td>
+                                            <td>
+                                                <div class="catalog-edit-grid">
+                                                    <asp:TextBox ID="txtDepartmentEditName" runat="server" Text='<%# Eval("Name") %>' MaxLength="100" CssClass="catalog-name-input" />
+                                                    <div class="form-hint"><%# GetDepartmentUsageText(Eval("ActiveUserCount")) %></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="catalog-status-stack">
+                                                    <span class='<%# Convert.ToBoolean(Eval("IsActive")) ? "status-badge status-success" : "status-badge status-danger" %>'><%# Convert.ToBoolean(Eval("IsActive")) ? "Active" : "Inactive" %></span>
+                                                    <label class="checkbox-inline">
+                                                        <asp:CheckBox ID="chkDepartmentIsActive" runat="server" Checked='<%# Convert.ToBoolean(Eval("IsActive")) %>' CssClass="catalog-active-checkbox" />
+                                                        <span>Active</span>
+                                                    </label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <asp:Button
+                                                    ID="btnSaveDepartment"
+                                                    runat="server"
+                                                    Text="Save"
+                                                    CssClass="btn-secondary policy-update-trigger"
+                                                    CommandName="UpdateDepartment"
+                                                    CommandArgument='<%# Eval("Id") %>'
+                                                    OnClientClick="return confirmCatalogUpdate(this);"
+                                                    data-item-type="department"
+                                                    data-original-name='<%# Eval("Name") %>'
+                                                    data-original-active='<%# Convert.ToBoolean(Eval("IsActive")) ? "true" : "false" %>'
+                                                    data-active-user-count='<%# Eval("ActiveUserCount") %>' />
+                                            </td>
                                         </tr>
                                     </ItemTemplate>
                                 </asp:Repeater>
@@ -152,15 +180,54 @@
                                     <th>Leave Types</th>
                                     <th>Default</th>
                                     <th>Rules</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <asp:Repeater ID="rptLeaveTypes" runat="server">
+                                <asp:Repeater ID="rptLeaveTypes" runat="server" OnItemCommand="rptLeaveTypes_ItemCommand">
                                     <ItemTemplate>
                                         <tr>
-                                            <td><%# Eval("Name") %></td>
-                                            <td><%# Eval("DefaultDays", "{0:0.#}") %> days</td>
-                                            <td><%# Convert.ToBoolean(Eval("RequiresAttachment")) ? "Attachment required" : "Standard" %></td>
+                                            <td>
+                                                <div class="catalog-edit-grid">
+                                                    <asp:TextBox ID="txtLeaveTypeEditName" runat="server" Text='<%# Eval("Name") %>' MaxLength="50" CssClass="catalog-name-input" />
+                                                    <div class="form-hint">Order: lower numbers appear first.</div>
+                                                    <div class="form-hint"><%# GetLeaveTypeUsageText(Eval("RequestCount"), Eval("BalanceCount")) %></div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="catalog-edit-grid catalog-edit-grid-compact">
+                                                    <asp:TextBox ID="txtLeaveTypeEditDefaultDays" runat="server" Text='<%# string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.#}", Eval("DefaultDays")) %>' TextMode="Number" />
+                                                    <asp:TextBox ID="txtLeaveTypeEditSortOrder" runat="server" Text='<%# Eval("SortOrder") %>' TextMode="Number" />
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="catalog-status-stack">
+                                                    <span class='<%# Convert.ToBoolean(Eval("IsActive")) ? "status-badge status-success" : "status-badge status-danger" %>'><%# Convert.ToBoolean(Eval("IsActive")) ? "Active" : "Inactive" %></span>
+                                                    <label class="checkbox-inline">
+                                                        <asp:CheckBox ID="chkLeaveTypeEditRequiresAttachment" runat="server" Checked='<%# Convert.ToBoolean(Eval("RequiresAttachment")) %>' />
+                                                        <span>Requires attachment</span>
+                                                    </label>
+                                                    <label class="checkbox-inline">
+                                                        <asp:CheckBox ID="chkLeaveTypeEditIsActive" runat="server" Checked='<%# Convert.ToBoolean(Eval("IsActive")) %>' CssClass="catalog-active-checkbox" />
+                                                        <span>Active</span>
+                                                    </label>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <asp:Button
+                                                    ID="btnSaveLeaveType"
+                                                    runat="server"
+                                                    Text="Save"
+                                                    CssClass="btn-secondary policy-update-trigger"
+                                                    CommandName="UpdateLeaveType"
+                                                    CommandArgument='<%# Eval("Id") %>'
+                                                    OnClientClick="return confirmCatalogUpdate(this);"
+                                                    data-item-type="leave-type"
+                                                    data-original-name='<%# Eval("Name") %>'
+                                                    data-original-active='<%# Convert.ToBoolean(Eval("IsActive")) ? "true" : "false" %>'
+                                                    data-request-count='<%# Eval("RequestCount") %>'
+                                                    data-balance-count='<%# Eval("BalanceCount") %>' />
+                                            </td>
                                         </tr>
                                     </ItemTemplate>
                                 </asp:Repeater>
@@ -265,4 +332,50 @@
     </div>
 </asp:Content>
 <asp:Content ID="ScriptsContent" ContentPlaceHolderID="ScriptsContent" runat="server">
+    <script>
+        function confirmCatalogUpdate(button) {
+            if (!button) {
+                return true;
+            }
+
+            var row = button.closest("tr");
+            if (!row) {
+                return true;
+            }
+
+            var itemType = button.getAttribute("data-item-type") || "item";
+            var originalName = button.getAttribute("data-original-name") || "";
+            var originalActive = button.getAttribute("data-original-active") === "true";
+            var nameInput = row.querySelector(".catalog-name-input");
+            var activeCheckbox = row.querySelector(".catalog-active-checkbox input, input.catalog-active-checkbox");
+            var currentName = nameInput ? nameInput.value.trim() : originalName;
+            var currentActive = activeCheckbox ? activeCheckbox.checked : originalActive;
+            var messages = [];
+
+            if (currentName !== originalName) {
+                messages.push("You are renaming this " + itemType + " from \"" + originalName + "\" to \"" + currentName + "\".");
+            }
+
+            if (originalActive && !currentActive) {
+                if (itemType === "department") {
+                    var activeUserCount = parseInt(button.getAttribute("data-active-user-count") || "0", 10);
+                    messages.push(activeUserCount > 0
+                        ? "This department is still used by " + activeUserCount + " active user(s). Deactivation will stop new assignments but keep existing users and history."
+                        : "This department will no longer be available for new user assignments.");
+                } else {
+                    var requestCount = parseInt(button.getAttribute("data-request-count") || "0", 10);
+                    var balanceCount = parseInt(button.getAttribute("data-balance-count") || "0", 10);
+                    messages.push((requestCount > 0 || balanceCount > 0)
+                        ? "This leave type is already used in existing requests or balances. Deactivation will only block new use and keep history intact."
+                        : "This leave type will no longer be available for new leave requests.");
+                }
+            }
+
+            if (messages.length === 0) {
+                return true;
+            }
+
+            return window.confirm(messages.join("\n\n") + "\n\nContinue?");
+        }
+    </script>
 </asp:Content>

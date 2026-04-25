@@ -27,7 +27,12 @@ namespace OnlineLeaveManagementSystem.Data
         public static DataTable GetDepartments(bool includeInactive)
         {
             string query = @"
-SELECT Id, Name, IsActive, CreatedAt
+SELECT
+    d.Id,
+    d.Name,
+    d.IsActive,
+    d.CreatedAt,
+    (SELECT COUNT(1) FROM dbo.Users u WHERE u.DepartmentId = d.Id AND u.IsActive = 1) AS ActiveUserCount
 FROM dbo.Departments";
 
             if (!includeInactive)
@@ -56,11 +61,82 @@ VALUES (@Name, 1, GETDATE());",
             }
         }
 
+        public static void UpdateDepartment(int departmentId, string name, bool isActive)
+        {
+            string normalizedName = NormalizeRequired(name, "Department name");
+
+            using (SqlConnection connection = DbHelper.GetOpenConnection())
+            using (SqlTransaction transaction = connection.BeginTransaction())
+            {
+                try
+                {
+                    string previousName;
+                    using (SqlCommand selectCommand = new SqlCommand("SELECT TOP 1 Name FROM dbo.Departments WHERE Id = @Id;", connection, transaction))
+                    {
+                        selectCommand.Parameters.AddWithValue("@Id", departmentId);
+                        object result = selectCommand.ExecuteScalar();
+                        if (result == null || result == DBNull.Value)
+                        {
+                            throw new InvalidOperationException("That department could not be found.");
+                        }
+
+                        previousName = Convert.ToString(result);
+                    }
+
+                    using (SqlCommand updateCommand = new SqlCommand(@"
+UPDATE dbo.Departments
+SET Name = @Name,
+    IsActive = @IsActive
+WHERE Id = @Id;", connection, transaction))
+                    {
+                        updateCommand.Parameters.AddWithValue("@Id", departmentId);
+                        updateCommand.Parameters.AddWithValue("@Name", normalizedName);
+                        updateCommand.Parameters.AddWithValue("@IsActive", isActive);
+                        updateCommand.ExecuteNonQuery();
+                    }
+
+                    if (!string.Equals(previousName, normalizedName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (SqlCommand userCommand = new SqlCommand(@"
+UPDATE dbo.Users
+SET Department = @NewDepartment
+WHERE DepartmentId = @DepartmentId;", connection, transaction))
+                        {
+                            userCommand.Parameters.AddWithValue("@DepartmentId", departmentId);
+                            userCommand.Parameters.AddWithValue("@NewDepartment", normalizedName);
+                            userCommand.ExecuteNonQuery();
+                        }
+                    }
+
+                    transaction.Commit();
+                }
+                catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
+                {
+                    transaction.Rollback();
+                    throw new InvalidOperationException("That department already exists.");
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
+        }
+
         public static DataTable GetLeaveTypes(bool includeInactive)
         {
             string query = @"
-SELECT Id, Name, DefaultDays, RequiresAttachment, IsActive, SortOrder, CreatedAt
-FROM dbo.LeaveTypes";
+SELECT
+    lt.Id,
+    lt.Name,
+    lt.DefaultDays,
+    lt.RequiresAttachment,
+    lt.IsActive,
+    lt.SortOrder,
+    lt.CreatedAt,
+    (SELECT COUNT(1) FROM dbo.LeaveBalances lb WHERE lb.LeaveTypeId = lt.Id) AS BalanceCount,
+    (SELECT COUNT(1) FROM dbo.LeaveRequests lr WHERE lr.LeaveTypeId = lt.Id) AS RequestCount
+FROM dbo.LeaveTypes lt";
 
             if (!includeInactive)
             {
@@ -102,6 +178,94 @@ VALUES
             }
 
             EnsureBalancesForAllUsers(DateTime.Today.Year);
+        }
+
+        public static void UpdateLeaveType(int leaveTypeId, string name, decimal defaultDays, bool requiresAttachment, bool isActive, int sortOrder)
+        {
+            string normalizedName = NormalizeRequired(name, "Leave type name");
+            if (defaultDays < 0)
+            {
+                throw new InvalidOperationException("Default balance must be zero or greater.");
+            }
+
+            if (sortOrder < 1)
+            {
+                throw new InvalidOperationException("Sort order must be 1 or greater.");
+            }
+
+            using (SqlConnection connection = DbHelper.GetOpenConnection())
+            using (SqlTransaction transaction = connection.BeginTransaction())
+            {
+                try
+                {
+                    string previousName;
+                    using (SqlCommand selectCommand = new SqlCommand("SELECT TOP 1 Name FROM dbo.LeaveTypes WHERE Id = @Id;", connection, transaction))
+                    {
+                        selectCommand.Parameters.AddWithValue("@Id", leaveTypeId);
+                        object result = selectCommand.ExecuteScalar();
+                        if (result == null || result == DBNull.Value)
+                        {
+                            throw new InvalidOperationException("That leave type could not be found.");
+                        }
+
+                        previousName = Convert.ToString(result);
+                    }
+
+                    bool isProtectedUnpaidLeave = string.Equals(previousName, UnpaidLeaveName, StringComparison.OrdinalIgnoreCase);
+                    if (isProtectedUnpaidLeave && !string.Equals(normalizedName, UnpaidLeaveName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new InvalidOperationException("The Unpaid Leave type name cannot be changed.");
+                    }
+
+                    if (isProtectedUnpaidLeave && !isActive)
+                    {
+                        throw new InvalidOperationException("The Unpaid Leave type cannot be deactivated.");
+                    }
+
+                    using (SqlCommand updateCommand = new SqlCommand(@"
+UPDATE dbo.LeaveTypes
+SET Name = @Name,
+    DefaultDays = @DefaultDays,
+    RequiresAttachment = @RequiresAttachment,
+    IsActive = @IsActive,
+    SortOrder = @SortOrder
+WHERE Id = @Id;", connection, transaction))
+                    {
+                        updateCommand.Parameters.AddWithValue("@Id", leaveTypeId);
+                        updateCommand.Parameters.AddWithValue("@Name", normalizedName);
+                        updateCommand.Parameters.AddWithValue("@DefaultDays", defaultDays);
+                        updateCommand.Parameters.AddWithValue("@RequiresAttachment", requiresAttachment);
+                        updateCommand.Parameters.AddWithValue("@IsActive", isActive);
+                        updateCommand.Parameters.AddWithValue("@SortOrder", sortOrder);
+                        updateCommand.ExecuteNonQuery();
+                    }
+
+                    if (!string.Equals(previousName, normalizedName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        using (SqlCommand requestCommand = new SqlCommand(@"
+UPDATE dbo.LeaveRequests
+SET LeaveType = @LeaveType
+WHERE LeaveTypeId = @LeaveTypeId;", connection, transaction))
+                        {
+                            requestCommand.Parameters.AddWithValue("@LeaveTypeId", leaveTypeId);
+                            requestCommand.Parameters.AddWithValue("@LeaveType", normalizedName);
+                            requestCommand.ExecuteNonQuery();
+                        }
+                    }
+
+                    transaction.Commit();
+                }
+                catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
+                {
+                    transaction.Rollback();
+                    throw new InvalidOperationException("That leave type already exists.");
+                }
+                catch
+                {
+                    transaction.Rollback();
+                    throw;
+                }
+            }
         }
 
         public static DataTable GetUserBalances(int userId, int calendarYear)

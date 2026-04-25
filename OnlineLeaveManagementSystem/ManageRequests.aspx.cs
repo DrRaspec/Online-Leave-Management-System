@@ -92,7 +92,7 @@ namespace OnlineLeaveManagementSystem
             ddlDepartmentFilter.Items.Clear();
             ddlDepartmentFilter.Items.Add(new ListItem("All Departments", "All"));
 
-            DataTable departments = LeaveManagementRepository.GetDepartments(false);
+            DataTable departments = LeaveManagementRepository.GetDepartments(true);
             foreach (DataRow row in departments.Rows)
             {
                 string departmentName = Convert.ToString(row["Name"]);

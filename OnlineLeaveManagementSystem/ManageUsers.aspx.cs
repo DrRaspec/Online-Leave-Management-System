@@ -209,6 +209,92 @@ namespace OnlineLeaveManagementSystem
             }
         }
 
+        protected void rptDepartments_ItemCommand(object source, RepeaterCommandEventArgs e)
+        {
+            if (!string.Equals(e.CommandName, "UpdateDepartment", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            int departmentId;
+            if (!int.TryParse(Convert.ToString(e.CommandArgument), out departmentId))
+            {
+                return;
+            }
+
+            try
+            {
+                TextBox txtDepartmentEditName = e.Item.FindControl("txtDepartmentEditName") as TextBox;
+                CheckBox chkDepartmentIsActive = e.Item.FindControl("chkDepartmentIsActive") as CheckBox;
+
+                LeaveManagementRepository.UpdateDepartment(
+                    departmentId,
+                    txtDepartmentEditName == null ? string.Empty : txtDepartmentEditName.Text,
+                    chkDepartmentIsActive != null && chkDepartmentIsActive.Checked);
+
+                ShowSuccess("Department updated.");
+                BindDepartmentList(ddlNewDepartment, false);
+                BindDepartmentList(ddlDepartmentFilter, true);
+                BindPage();
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex.Message);
+            }
+        }
+
+        protected void rptLeaveTypes_ItemCommand(object source, RepeaterCommandEventArgs e)
+        {
+            if (!string.Equals(e.CommandName, "UpdateLeaveType", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            int leaveTypeId;
+            if (!int.TryParse(Convert.ToString(e.CommandArgument), out leaveTypeId))
+            {
+                return;
+            }
+
+            try
+            {
+                TextBox txtLeaveTypeEditName = e.Item.FindControl("txtLeaveTypeEditName") as TextBox;
+                TextBox txtLeaveTypeEditDefaultDays = e.Item.FindControl("txtLeaveTypeEditDefaultDays") as TextBox;
+                TextBox txtLeaveTypeEditSortOrder = e.Item.FindControl("txtLeaveTypeEditSortOrder") as TextBox;
+                CheckBox chkLeaveTypeEditRequiresAttachment = e.Item.FindControl("chkLeaveTypeEditRequiresAttachment") as CheckBox;
+                CheckBox chkLeaveTypeEditIsActive = e.Item.FindControl("chkLeaveTypeEditIsActive") as CheckBox;
+
+                decimal defaultDays;
+                if (!decimal.TryParse(txtLeaveTypeEditDefaultDays == null ? string.Empty : txtLeaveTypeEditDefaultDays.Text, NumberStyles.Number, CultureInfo.InvariantCulture, out defaultDays))
+                {
+                    ShowError("Enter a valid default balance for the leave type.");
+                    return;
+                }
+
+                int sortOrder;
+                if (!int.TryParse(txtLeaveTypeEditSortOrder == null ? string.Empty : txtLeaveTypeEditSortOrder.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out sortOrder))
+                {
+                    ShowError("Enter a valid sort order for the leave type.");
+                    return;
+                }
+
+                LeaveManagementRepository.UpdateLeaveType(
+                    leaveTypeId,
+                    txtLeaveTypeEditName == null ? string.Empty : txtLeaveTypeEditName.Text,
+                    defaultDays,
+                    chkLeaveTypeEditRequiresAttachment != null && chkLeaveTypeEditRequiresAttachment.Checked,
+                    chkLeaveTypeEditIsActive != null && chkLeaveTypeEditIsActive.Checked,
+                    sortOrder);
+
+                ShowSuccess("Leave type updated.");
+                BindPage();
+            }
+            catch (Exception ex)
+            {
+                ShowError(ex.Message);
+            }
+        }
+
         protected string GetAccountStatusCss(object isActiveValue)
         {
             return Convert.ToBoolean(isActiveValue) ? "status-badge status-success" : "status-badge status-danger";
@@ -247,6 +333,24 @@ namespace OnlineLeaveManagementSystem
         protected string FormatLastLogin(object value)
         {
             return value == null || value == DBNull.Value ? "Never signed in" : Convert.ToDateTime(value).ToString("dd MMM yyyy HH:mm");
+        }
+
+        protected string GetDepartmentUsageText(object activeUserCountValue)
+        {
+            int count = activeUserCountValue == DBNull.Value ? 0 : Convert.ToInt32(activeUserCountValue);
+            return count == 0 ? "Not assigned to active users." : string.Format("Used by {0} active user(s).", count);
+        }
+
+        protected string GetLeaveTypeUsageText(object requestCountValue, object balanceCountValue)
+        {
+            int requestCount = requestCountValue == DBNull.Value ? 0 : Convert.ToInt32(requestCountValue);
+            int balanceCount = balanceCountValue == DBNull.Value ? 0 : Convert.ToInt32(balanceCountValue);
+            if (requestCount == 0 && balanceCount == 0)
+            {
+                return "No requests or balances yet.";
+            }
+
+            return string.Format("Used in {0} request(s) and {1} balance row(s).", requestCount, balanceCount);
         }
 
         private void BindPage()
@@ -299,10 +403,10 @@ namespace OnlineLeaveManagementSystem
 
         private void BindPolicyData()
         {
-            rptDepartments.DataSource = LeaveManagementRepository.GetDepartments(false);
+            rptDepartments.DataSource = LeaveManagementRepository.GetDepartments(true);
             rptDepartments.DataBind();
 
-            rptLeaveTypes.DataSource = LeaveManagementRepository.GetLeaveTypes(false);
+            rptLeaveTypes.DataSource = LeaveManagementRepository.GetLeaveTypes(true);
             rptLeaveTypes.DataBind();
         }
 
@@ -334,11 +438,25 @@ namespace OnlineLeaveManagementSystem
                 control.Items.Add(new ListItem("All Departments", "All"));
             }
 
-            DataTable departments = LeaveManagementRepository.GetDepartments(false);
+            DataTable departments = LeaveManagementRepository.GetDepartments(includeAllOption);
             foreach (DataRow row in departments.Rows)
             {
                 string name = Convert.ToString(row["Name"]);
                 control.Items.Add(new ListItem(name, name));
+            }
+
+            if (!string.IsNullOrWhiteSpace(selectedValue) && control.Items.FindByValue(selectedValue) == null)
+            {
+                DataTable allDepartments = LeaveManagementRepository.GetDepartments(true);
+                foreach (DataRow row in allDepartments.Rows)
+                {
+                    string name = Convert.ToString(row["Name"]);
+                    if (string.Equals(name, selectedValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        control.Items.Add(new ListItem(name + " (Inactive)", name));
+                        break;
+                    }
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(selectedValue))

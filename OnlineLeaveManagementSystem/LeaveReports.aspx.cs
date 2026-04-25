@@ -118,7 +118,7 @@ namespace OnlineLeaveManagementSystem
             ddlDepartmentFilter.Items.Clear();
             ddlDepartmentFilter.Items.Add(new ListItem("All Departments", "All"));
 
-            DataTable departments = LeaveManagementRepository.GetDepartments(false);
+            DataTable departments = LeaveManagementRepository.GetDepartments(true);
             foreach (DataRow row in departments.Rows)
             {
                 string departmentName = Convert.ToString(row["Name"]);
@@ -143,7 +143,7 @@ namespace OnlineLeaveManagementSystem
             ddlLeaveTypeFilter.Items.Clear();
             ddlLeaveTypeFilter.Items.Add(new ListItem("All Leave Types", "All"));
 
-            DataTable leaveTypes = LeaveManagementRepository.GetLeaveTypes(false);
+            DataTable leaveTypes = LeaveManagementRepository.GetLeaveTypes(true);
             foreach (DataRow row in leaveTypes.Rows)
             {
                 string leaveTypeName = Convert.ToString(row["Name"]);

@@ -1122,6 +1122,24 @@ body.is-page-loading {
     margin-bottom: 8px;
 }
 
+.catalog-edit-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.catalog-edit-grid-compact {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(88px, 1fr));
+    gap: 8px;
+}
+
+.catalog-status-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .flex-grow-1 { flex: 1; }
 
 .leave-balance-card {
