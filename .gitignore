@@ -1,0 +1,34 @@
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+**/bin/
+**/obj/
+
+# NuGet restore artifacts (packages.config workflow)
+packages/
+
+# Local .NET SDK state
+.dotnet/
+
+# Logs and runtime-generated files
+*.log
+OnlineLeaveManagementSystem/App_Data/*.log
+OnlineLeaveManagementSystem/App_Data/LeaveAttachments/*
+!OnlineLeaveManagementSystem/App_Data/LeaveAttachments/.gitkeep
+
+# Local database and backup artifacts
+*.mdf
+*.ldf
+*.ndf
+*.bak
+*.trn
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
