@@ -33,14 +33,14 @@ SELECT
     d.IsActive,
     d.CreatedAt,
     (SELECT COUNT(1) FROM dbo.Users u WHERE u.DepartmentId = d.Id AND u.IsActive = 1) AS ActiveUserCount
-FROM dbo.Departments";
+FROM dbo.Departments d";
 
             if (!includeInactive)
             {
-                query += " WHERE IsActive = 1";
+                query += " WHERE d.IsActive = 1";
             }
 
-            query += " ORDER BY Name ASC;";
+            query += " ORDER BY d.Name ASC;";
             return DbHelper.ExecuteDataTable(query);
         }
 
