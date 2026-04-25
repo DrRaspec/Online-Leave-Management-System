@@ -199,16 +199,22 @@ VALUES
                 try
                 {
                     string previousName;
-                    using (SqlCommand selectCommand = new SqlCommand("SELECT TOP 1 Name FROM dbo.LeaveTypes WHERE Id = @Id;", connection, transaction))
+                    decimal previousDefaultDays = 0;
+                    bool previousRequiresAttachment = false;
+                    using (SqlCommand selectCommand = new SqlCommand("SELECT TOP 1 Name, DefaultDays, RequiresAttachment FROM dbo.LeaveTypes WHERE Id = @Id;", connection, transaction))
                     {
                         selectCommand.Parameters.AddWithValue("@Id", leaveTypeId);
-                        object result = selectCommand.ExecuteScalar();
-                        if (result == null || result == DBNull.Value)
+                        using (SqlDataReader reader = selectCommand.ExecuteReader())
                         {
-                            throw new InvalidOperationException("That leave type could not be found.");
-                        }
+                            if (!reader.Read())
+                            {
+                                throw new InvalidOperationException("That leave type could not be found.");
+                            }
 
-                        previousName = Convert.ToString(result);
+                            previousName = Convert.ToString(reader["Name"]);
+                            previousDefaultDays = Convert.ToDecimal(reader["DefaultDays"]);
+                            previousRequiresAttachment = Convert.ToBoolean(reader["RequiresAttachment"]);
+                        }
                     }
 
                     bool isProtectedUnpaidLeave = string.Equals(previousName, UnpaidLeaveName, StringComparison.OrdinalIgnoreCase);
@@ -220,6 +226,16 @@ VALUES
                     if (isProtectedUnpaidLeave && !isActive)
                     {
                         throw new InvalidOperationException("The Unpaid Leave type cannot be deactivated.");
+                    }
+
+                    if (isProtectedUnpaidLeave && defaultDays != previousDefaultDays)
+                    {
+                        throw new InvalidOperationException("The Unpaid Leave type default balance cannot be changed.");
+                    }
+
+                    if (isProtectedUnpaidLeave && requiresAttachment != previousRequiresAttachment)
+                    {
+                        throw new InvalidOperationException("The Unpaid Leave type attachment rule cannot be changed.");
                     }
 
                     using (SqlCommand updateCommand = new SqlCommand(@"

@@ -44,6 +44,8 @@ namespace OnlineLeaveManagementSystem
             lblNotificationCount.Text = unreadCount.ToString();
             lnkManageUsers.Visible = isAdmin;
             lnkManageUsers.CssClass = isAdmin ? GetNavCss("ManageUsers.aspx") : "nav-item";
+            lnkPolicyCatalog.Visible = isAdmin;
+            lnkPolicyCatalog.CssClass = isAdmin ? GetNavCss("PolicyCatalog.aspx") : "nav-item";
             lnkCompanySettings.Visible = isAdmin;
             lnkCompanySettings.CssClass = isAdmin ? GetNavCss("CompanySettings.aspx") : "nav-item";
             lnkChangePassword.Visible = true;

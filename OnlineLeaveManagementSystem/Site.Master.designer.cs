@@ -27,6 +27,8 @@ namespace OnlineLeaveManagementSystem
 
         protected global::System.Web.UI.WebControls.HyperLink lnkManageUsers;
 
+        protected global::System.Web.UI.WebControls.HyperLink lnkPolicyCatalog;
+
         protected global::System.Web.UI.WebControls.HyperLink lnkCompanySettings;
 
         protected global::System.Web.UI.WebControls.Label lblAvatarInitial;
