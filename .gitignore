@@ -19,8 +19,12 @@ packages/
 # Logs and runtime-generated files
 *.log
 OnlineLeaveManagementSystem/App_Data/*.log
+OnlineLeaveManagementSystem/App_Data/bootstrap-admin.txt
 OnlineLeaveManagementSystem/App_Data/LeaveAttachments/*
 !OnlineLeaveManagementSystem/App_Data/LeaveAttachments/.gitkeep
+
+# Local machine-specific config overrides
+OnlineLeaveManagementSystem/Web.config.local
 
 # Local database and backup artifacts
 *.mdf
