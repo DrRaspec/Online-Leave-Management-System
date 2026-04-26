@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Web;
+using OnlineLeaveManagementSystem.Data;
 using OnlineLeaveManagementSystem.Security;
 
 namespace OnlineLeaveManagementSystem
@@ -24,6 +25,13 @@ namespace OnlineLeaveManagementSystem
             if (!File.Exists(fullPath))
             {
                 Response.StatusCode = 404;
+                Response.End();
+                return;
+            }
+
+            if (!LeaveManagementRepository.CanAccessAttachment(CurrentUser, safeFile))
+            {
+                Response.StatusCode = 403;
                 Response.End();
                 return;
             }

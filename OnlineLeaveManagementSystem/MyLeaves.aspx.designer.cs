@@ -17,6 +17,8 @@ namespace OnlineLeaveManagementSystem
 
         protected global::System.Web.UI.WebControls.DropDownList ddlStatusFilter;
 
+        protected global::System.Web.UI.WebControls.Button btnResetFilters;
+
         protected global::System.Web.UI.WebControls.Label lblLeavesMessage;
 
         protected global::System.Web.UI.WebControls.Repeater rptLeaves;

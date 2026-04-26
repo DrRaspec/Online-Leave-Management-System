@@ -51,12 +51,15 @@
                     Request List
                 </div>
                 <div class="leaves-filter" style="margin:0;">
-                    <asp:DropDownList ID="ddlStatusFilter" runat="server" AutoPostBack="true" CssClass="w-full" OnSelectedIndexChanged="ddlStatusFilter_SelectedIndexChanged" style="min-height:34px;font-size:12.5px;">
-                        <asp:ListItem Text="All Status" Value="All" />
-                        <asp:ListItem Text="Pending" Value="Pending" />
-                        <asp:ListItem Text="Approved" Value="Approved" />
-                        <asp:ListItem Text="Rejected" Value="Rejected" />
-                    </asp:DropDownList>
+                    <div class="btn-row" style="margin:0;align-items:center;">
+                        <asp:DropDownList ID="ddlStatusFilter" runat="server" AutoPostBack="true" CssClass="w-full" OnSelectedIndexChanged="ddlStatusFilter_SelectedIndexChanged" style="min-height:34px;font-size:12.5px;">
+                            <asp:ListItem Text="All Status" Value="All" />
+                            <asp:ListItem Text="Pending" Value="Pending" />
+                            <asp:ListItem Text="Approved" Value="Approved" />
+                            <asp:ListItem Text="Rejected" Value="Rejected" />
+                        </asp:DropDownList>
+                        <asp:Button ID="btnResetFilters" runat="server" Text="Reset" CssClass="btn-secondary" OnClick="btnResetFilters_Click" CausesValidation="false" />
+                    </div>
                 </div>
             </div>
             <div class="card-body">

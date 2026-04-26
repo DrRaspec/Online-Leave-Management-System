@@ -14,7 +14,7 @@ namespace OnlineLeaveManagementSystem.Infrastructure
         public static byte[] BuildCsv(DataTable table)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Employee,Username,Department,Leave Type,Start Date,End Date,Days,Status,Submitted At,Reviewed By,Reviewed At,Review Comment,Reason");
+            builder.AppendLine("Employee,Username,Department,Leave Type,Start Date,End Date,Days,Status,Attachment Link,Submitted At,Reviewed By,Reviewed At,Review Comment,Reason");
 
             foreach (DataRow row in table.Rows)
             {
@@ -27,6 +27,7 @@ namespace OnlineLeaveManagementSystem.Infrastructure
                     .Append(CsvValue(FormatDate(row["EndDate"]))).Append(',')
                     .Append(CsvValue(Convert.ToString(row["RequestedDays"]))).Append(',')
                     .Append(CsvValue(Convert.ToString(row["Status"]))).Append(',')
+                    .Append(CsvValue(GetAttachmentExportValue(row))).Append(',')
                     .Append(CsvValue(FormatDateTime(row["CreatedAt"]))).Append(',')
                     .Append(CsvValue(Convert.ToString(row["ReviewedByName"]))).Append(',')
                     .Append(CsvValue(FormatDateTime(row["ReviewedAt"]))).Append(',')
@@ -81,6 +82,12 @@ namespace OnlineLeaveManagementSystem.Infrastructure
                     lines.Add("Review: " + reviewComment);
                 }
 
+                string attachmentUrl = GetAttachmentExportValue(row);
+                if (!string.IsNullOrWhiteSpace(attachmentUrl))
+                {
+                    lines.Add("Attachment: " + attachmentUrl);
+                }
+
                 lines.Add(string.Empty);
             }
 
@@ -131,6 +138,7 @@ namespace OnlineLeaveManagementSystem.Infrastructure
             AppendTableCell(builder, "Date Range", true);
             AppendTableCell(builder, "Days", true);
             AppendTableCell(builder, "Status", true);
+            AppendTableCell(builder, "Attachment Link", true);
             AppendTableCell(builder, "Reason", true);
             builder.Append("</w:tr>");
 
@@ -143,6 +151,7 @@ namespace OnlineLeaveManagementSystem.Infrastructure
                 AppendTableCell(builder, string.Format("{0} to {1}", FormatDate(row["StartDate"]), FormatDate(row["EndDate"])), false);
                 AppendTableCell(builder, Convert.ToString(row["RequestedDays"]), false);
                 AppendTableCell(builder, Convert.ToString(row["Status"]), false);
+                AppendTableCell(builder, GetAttachmentExportValue(row), false);
                 AppendTableCell(builder, Convert.ToString(row["Reason"]), false);
                 builder.Append("</w:tr>");
             }
@@ -302,6 +311,26 @@ namespace OnlineLeaveManagementSystem.Infrastructure
         {
             string normalized = value ?? string.Empty;
             return "\"" + normalized.Replace("\"", "\"\"") + "\"";
+        }
+
+        private static string GetAttachmentExportValue(DataRow row)
+        {
+            if (row == null)
+            {
+                return string.Empty;
+            }
+
+            if (row.Table.Columns.Contains("AttachmentExportUrl"))
+            {
+                return Convert.ToString(row["AttachmentExportUrl"]);
+            }
+
+            if (row.Table.Columns.Contains("AttachmentPath"))
+            {
+                return Convert.ToString(row["AttachmentPath"]);
+            }
+
+            return string.Empty;
         }
 
         private static string FormatDate(object value)

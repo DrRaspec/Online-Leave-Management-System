@@ -36,6 +36,29 @@ namespace OnlineLeaveManagementSystem
             BindRequests();
         }
 
+        protected void btnResetFilters_Click(object sender, EventArgs e)
+        {
+            txtSearch.Text = string.Empty;
+            ddlStatusFilter.SelectedValue = "All";
+
+            if (AuthorizationHelper.CanSelectAnyDepartment(CurrentUser))
+            {
+                ddlDepartmentFilter.SelectedValue = "All";
+            }
+            else
+            {
+                ListItem currentDepartment = ddlDepartmentFilter.Items.FindByValue(CurrentUser.Department);
+                if (currentDepartment != null)
+                {
+                    ddlDepartmentFilter.ClearSelection();
+                    currentDepartment.Selected = true;
+                }
+            }
+
+            CurrentPage = 1;
+            BindRequests();
+        }
+
         protected void ddlStatusFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
             CurrentPage = 1;

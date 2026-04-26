@@ -29,6 +29,8 @@ namespace OnlineLeaveManagementSystem
 
         protected global::System.Web.UI.WebControls.Button btnApplyFilters;
 
+        protected global::System.Web.UI.WebControls.Button btnResetFilters;
+
         protected global::System.Web.UI.WebControls.Button btnExportCsv;
 
         protected global::System.Web.UI.WebControls.Button btnExportPdf;

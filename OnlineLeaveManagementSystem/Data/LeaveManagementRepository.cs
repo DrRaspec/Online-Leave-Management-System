@@ -398,6 +398,7 @@ SELECT
     lr.Status,
     lr.Reason,
     lr.ReviewComment,
+    lr.AttachmentPath,
     lr.CreatedAt,
     reviewer.FullName AS ReviewedByName,
     lr.ReviewedAt,
@@ -439,6 +440,7 @@ SELECT
     lr.Status,
     lr.Reason,
     lr.ReviewComment,
+    lr.AttachmentPath,
     lr.CreatedAt,
     reviewer.FullName AS ReviewedByName,
     lr.ReviewedAt,
@@ -530,6 +532,7 @@ SELECT
     lr.EndDate,
     lr.Status,
     lr.Reason,
+    lr.AttachmentPath,
     lr.CreatedAt,
     reviewer.FullName AS ReviewedByName,
     lr.ReviewedAt,
@@ -623,6 +626,7 @@ SELECT
     lr.EndDate,
     lr.Status,
     lr.Reason,
+    lr.AttachmentPath,
     lr.CreatedAt,
     reviewer.FullName AS ReviewedByName,
     lr.ReviewedAt,
@@ -888,6 +892,35 @@ WHERE Id = @Id;", connection))
             }
         }
 
+        public static bool CanAccessAttachment(AuthenticatedUser currentUser, string fileName)
+        {
+            if (currentUser == null || string.IsNullOrWhiteSpace(fileName))
+            {
+                return false;
+            }
+
+            using (SqlConnection connection = DbHelper.GetOpenConnection())
+            {
+                AttachmentAccessRecord attachment = GetAttachmentAccessRecord(connection, fileName);
+                if (attachment == null)
+                {
+                    return false;
+                }
+
+                if (attachment.UserId == currentUser.Id)
+                {
+                    return true;
+                }
+
+                if (!AuthorizationHelper.CanManageRequests(currentUser))
+                {
+                    return false;
+                }
+
+                return AuthorizationHelper.CanManageDepartment(currentUser, attachment.Department);
+            }
+        }
+
         public static int ResolveDepartmentId(SqlConnection connection, string departmentName)
         {
             string normalizedName = NormalizeRequired(departmentName, "Department");
@@ -1023,6 +1056,61 @@ WHERE lr.Id = @Id;", connection))
                     };
                 }
             }
+        }
+
+        private static AttachmentAccessRecord GetAttachmentAccessRecord(SqlConnection connection, string fileName)
+        {
+            using (SqlCommand command = new SqlCommand(@"
+SELECT
+    lr.UserId,
+    u.Department,
+    lr.AttachmentPath
+FROM dbo.LeaveRequests lr
+INNER JOIN dbo.Users u ON u.Id = lr.UserId
+WHERE lr.AttachmentPath IS NOT NULL;", connection))
+            using (SqlDataReader reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    string attachmentPath = Convert.ToString(reader["AttachmentPath"]);
+                    string storedFileName = ExtractAttachmentFileName(attachmentPath);
+                    if (!string.Equals(storedFileName, fileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    return new AttachmentAccessRecord
+                    {
+                        UserId = Convert.ToInt32(reader["UserId"]),
+                        Department = Convert.ToString(reader["Department"])
+                    };
+                }
+            }
+
+            return null;
+        }
+
+        private static string ExtractAttachmentFileName(string attachmentPath)
+        {
+            if (string.IsNullOrWhiteSpace(attachmentPath))
+            {
+                return string.Empty;
+            }
+
+            int markerIndex = attachmentPath.IndexOf("file=", StringComparison.OrdinalIgnoreCase);
+            if (markerIndex < 0)
+            {
+                return string.Empty;
+            }
+
+            string encodedFileName = attachmentPath.Substring(markerIndex + 5);
+            int ampersandIndex = encodedFileName.IndexOf('&');
+            if (ampersandIndex >= 0)
+            {
+                encodedFileName = encodedFileName.Substring(0, ampersandIndex);
+            }
+
+            return Uri.UnescapeDataString(encodedFileName.Replace("+", "%20"));
         }
 
         private static void InsertHistory(SqlConnection connection, int requestId, int actorUserId, string action, string previousStatus, string newStatus, string comment)
@@ -1235,6 +1323,12 @@ VALUES
             public string Username { get; set; }
             public string Department { get; set; }
             public int RequestedDays { get; set; }
+        }
+
+        private sealed class AttachmentAccessRecord
+        {
+            public int UserId { get; set; }
+            public string Department { get; set; }
         }
     }
 }

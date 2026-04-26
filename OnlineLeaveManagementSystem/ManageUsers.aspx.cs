@@ -176,6 +176,13 @@ namespace OnlineLeaveManagementSystem
             BindUsers();
         }
 
+        protected void btnResetFilters_Click(object sender, EventArgs e)
+        {
+            txtUserSearch.Text = string.Empty;
+            ddlDepartmentFilter.SelectedValue = "All";
+            BindUsers();
+        }
+
         protected void ddlDepartmentFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
             BindUsers();

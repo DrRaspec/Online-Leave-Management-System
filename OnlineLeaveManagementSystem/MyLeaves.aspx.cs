@@ -21,6 +21,12 @@ namespace OnlineLeaveManagementSystem
             BindLeaves();
         }
 
+        protected void btnResetFilters_Click(object sender, EventArgs e)
+        {
+            ddlStatusFilter.SelectedValue = "All";
+            BindLeaves();
+        }
+
         private void BindLeaves()
         {
             try

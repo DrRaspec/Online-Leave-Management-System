@@ -69,6 +69,7 @@
 
                 <div class="report-actions">
                     <asp:Button ID="btnApplyFilters" runat="server" Text="Apply Filters" CssClass="btn-secondary" OnClick="btnApplyFilters_Click" />
+                    <asp:Button ID="btnResetFilters" runat="server" Text="Reset" CssClass="btn-secondary" OnClick="btnResetFilters_Click" CausesValidation="false" />
                     <asp:Button ID="btnExportCsv" runat="server" Text="Export CSV" CssClass="btn-secondary" OnClick="btnExportCsv_Click" CausesValidation="false" />
                     <asp:Button ID="btnExportPdf" runat="server" Text="Export PDF" CssClass="btn-secondary" OnClick="btnExportPdf_Click" CausesValidation="false" />
                     <asp:Button ID="btnExportDocx" runat="server" Text="Export DOCX" CssClass="btn-secondary" OnClick="btnExportDocx_Click" CausesValidation="false" />
@@ -137,6 +138,7 @@
                                 <th>Date Range</th>
                                 <th>Days</th>
                                 <th>Status</th>
+                                <th>Attachment</th>
                                 <th>Submitted</th>
                                 <th>Review</th>
                             </tr>
@@ -154,6 +156,14 @@
                                         <td><%# FormatDateRange(Eval("StartDate"), Eval("EndDate")) %></td>
                                         <td><%# Eval("RequestedDays") %></td>
                                         <td><span class='<%# GetStatusBadgeCss(Eval("Status")) %>'><%# Eval("Status") %></span></td>
+                                        <td>
+                                            <asp:PlaceHolder ID="phAttachment" runat="server" Visible='<%# !string.IsNullOrWhiteSpace(Convert.ToString(Eval("AttachmentPath"))) %>'>
+                                                <a href="<%# ResolveUrl(Convert.ToString(Eval("AttachmentPath"))) %>" target="_blank" rel="noopener">View</a>
+                                            </asp:PlaceHolder>
+                                            <asp:PlaceHolder ID="phNoAttachment" runat="server" Visible='<%# string.IsNullOrWhiteSpace(Convert.ToString(Eval("AttachmentPath"))) %>'>
+                                                <span class="report-subtle">-</span>
+                                            </asp:PlaceHolder>
+                                        </td>
                                         <td><%# Eval("CreatedAt", "{0:dd MMM yyyy}") %></td>
                                         <td><%# FormatReview(Eval("ReviewedByName"), Eval("ReviewedAt"), Eval("ReviewComment")) %></td>
                                     </tr>
@@ -195,6 +205,7 @@
 
             document.addEventListener("DOMContentLoaded", function () {
                 bindLoadingTrigger(document.getElementById("<%= btnApplyFilters.ClientID %>"), "click");
+                bindLoadingTrigger(document.getElementById("<%= btnResetFilters.ClientID %>"), "click");
                 bindLoadingTrigger(document.getElementById("<%= btnPreviousPage.ClientID %>"), "click");
                 bindLoadingTrigger(document.getElementById("<%= btnNextPage.ClientID %>"), "click");
             });

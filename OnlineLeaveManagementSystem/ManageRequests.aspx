@@ -54,7 +54,10 @@
                         </div>
                         <div class="form-group" style="justify-content:flex-end;">
                             <label class="form-label" style="visibility:hidden;">Apply</label>
-                            <asp:Button ID="btnApplyFilters" runat="server" Text="Apply Filters" CssClass="btn-secondary" OnClick="btnApplyFilters_Click" />
+                            <div class="btn-row" style="justify-content:flex-end;">
+                                <asp:Button ID="btnApplyFilters" runat="server" Text="Apply Filters" CssClass="btn-secondary" OnClick="btnApplyFilters_Click" />
+                                <asp:Button ID="btnResetFilters" runat="server" Text="Reset" CssClass="btn-secondary" OnClick="btnResetFilters_Click" CausesValidation="false" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -66,7 +69,7 @@
                                 <div class="request-layout">
                                     <div class="flex-grow-1">
                                         <div class="request-student"><%# Eval("FullName") %></div>
-                                        <div class="request-detail"><%# Eval("Department") %> · <%# Eval("Username") %></div>
+                                        <div class="request-detail"><%# Eval("Department") %> | <%# Eval("Username") %></div>
                                         <div class="request-grid">
                                             <div>
                                                 <div class="request-detail">Leave Type</div>
@@ -96,6 +99,14 @@
                                                 <div class="request-detail">Review Comment</div>
                                                 <div class="request-value"><%# string.IsNullOrWhiteSpace(Convert.ToString(Eval("ReviewComment"))) ? "-" : Eval("ReviewComment") %></div>
                                             </div>
+                                            <asp:PlaceHolder ID="phAttachment" runat="server" Visible='<%# !string.IsNullOrWhiteSpace(Convert.ToString(Eval("AttachmentPath"))) %>'>
+                                                <div>
+                                                    <div class="request-detail">Attachment</div>
+                                                    <div class="request-value">
+                                                        <a href="<%# ResolveUrl(Convert.ToString(Eval("AttachmentPath"))) %>" target="_blank" rel="noopener">View attachment</a>
+                                                    </div>
+                                                </div>
+                                            </asp:PlaceHolder>
                                         </div>
                                     </div>
                                     <div class="request-actions request-review-panel">
@@ -157,6 +168,7 @@
 
             document.addEventListener("DOMContentLoaded", function () {
                 bindLoadingTrigger(document.getElementById("<%= btnApplyFilters.ClientID %>"), "click");
+                bindLoadingTrigger(document.getElementById("<%= btnResetFilters.ClientID %>"), "click");
                 bindFilterPostBack(document.getElementById("<%= ddlStatusFilter.ClientID %>"), "change", "<%= ddlStatusFilter.UniqueID %>");
                 bindFilterPostBack(document.getElementById("<%= ddlDepartmentFilter.ClientID %>"), "change", "<%= ddlDepartmentFilter.UniqueID %>");
                 bindLoadingTrigger(document.getElementById("<%= btnPreviousPage.ClientID %>"), "click");

@@ -23,6 +23,8 @@ namespace OnlineLeaveManagementSystem
 
         protected global::System.Web.UI.WebControls.Button btnApplyFilters;
 
+        protected global::System.Web.UI.WebControls.Button btnResetFilters;
+
         protected global::System.Web.UI.WebControls.Repeater rptRequests;
 
         protected global::System.Web.UI.WebControls.Panel pnlPager;

@@ -39,6 +39,32 @@ namespace OnlineLeaveManagementSystem
             BindReport();
         }
 
+        protected void btnResetFilters_Click(object sender, EventArgs e)
+        {
+            txtSearch.Text = string.Empty;
+            ddlStatusFilter.SelectedValue = "All";
+            ddlLeaveTypeFilter.SelectedValue = "All";
+            txtStartDate.Text = string.Empty;
+            txtEndDate.Text = string.Empty;
+
+            if (AuthorizationHelper.CanSelectAnyDepartment(CurrentUser))
+            {
+                ddlDepartmentFilter.SelectedValue = "All";
+            }
+            else
+            {
+                ListItem currentDepartment = ddlDepartmentFilter.Items.FindByValue(CurrentUser.Department);
+                if (currentDepartment != null)
+                {
+                    ddlDepartmentFilter.ClearSelection();
+                    currentDepartment.Selected = true;
+                }
+            }
+
+            CurrentPage = 1;
+            BindReport();
+        }
+
         protected void btnPreviousPage_Click(object sender, EventArgs e)
         {
             if (CurrentPage > 1)
@@ -222,7 +248,7 @@ namespace OnlineLeaveManagementSystem
 
         private void ExportReport(string format)
         {
-            DataTable reportTable = GetReportData();
+            DataTable reportTable = PrepareExportTable(GetReportData());
             string fileBaseName = string.Format("leave-report-{0:yyyyMMdd-HHmm}", DateTime.Now);
             string generatedBy = string.Format("{0} ({1})", CurrentUser.FullName, CurrentUser.Role);
             List<string> filterSummary = BuildFilterSummary();
@@ -268,6 +294,26 @@ namespace OnlineLeaveManagementSystem
                 ParseDate(txtStartDate.Text),
                 ParseDate(txtEndDate.Text),
                 txtSearch.Text);
+        }
+
+        private DataTable PrepareExportTable(DataTable source)
+        {
+            DataTable exportTable = source.Copy();
+            if (!exportTable.Columns.Contains("AttachmentExportUrl"))
+            {
+                exportTable.Columns.Add("AttachmentExportUrl", typeof(string));
+            }
+
+            string baseUrl = Request.Url.GetLeftPart(UriPartial.Authority);
+            foreach (DataRow row in exportTable.Rows)
+            {
+                string attachmentPath = Convert.ToString(row["AttachmentPath"]);
+                row["AttachmentExportUrl"] = string.IsNullOrWhiteSpace(attachmentPath)
+                    ? string.Empty
+                    : baseUrl + ResolveUrl(attachmentPath);
+            }
+
+            return exportTable;
         }
 
         private LeaveManagementRepository.LeaveReportSummaryResult GetReportSummary()

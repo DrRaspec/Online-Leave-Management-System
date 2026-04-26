@@ -119,7 +119,10 @@
                         </div>
                         <div class="form-group" style="justify-content:flex-end;">
                             <label class="form-label" style="visibility:hidden;">Apply</label>
-                            <asp:Button ID="btnApplyFilters" runat="server" Text="Apply Filters" CssClass="btn-secondary" OnClick="btnApplyFilters_Click" />
+                            <div class="btn-row" style="justify-content:flex-end;">
+                                <asp:Button ID="btnApplyFilters" runat="server" Text="Apply Filters" CssClass="btn-secondary" OnClick="btnApplyFilters_Click" />
+                                <asp:Button ID="btnResetFilters" runat="server" Text="Reset" CssClass="btn-secondary" OnClick="btnResetFilters_Click" CausesValidation="false" />
+                            </div>
                         </div>
                     </div>
                 </div>

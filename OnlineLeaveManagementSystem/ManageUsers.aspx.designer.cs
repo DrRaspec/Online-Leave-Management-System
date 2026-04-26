@@ -25,6 +25,7 @@ namespace OnlineLeaveManagementSystem
         protected global::System.Web.UI.WebControls.TextBox txtUserSearch;
         protected global::System.Web.UI.WebControls.DropDownList ddlDepartmentFilter;
         protected global::System.Web.UI.WebControls.Button btnApplyFilters;
+        protected global::System.Web.UI.WebControls.Button btnResetFilters;
         protected global::System.Web.UI.WebControls.Repeater rptUsers;
         protected global::System.Web.UI.WebControls.Label lblUsersEmpty;
     }
